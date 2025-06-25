@@ -8,6 +8,8 @@ import GlitchEffect from './components/GlitchEffect';
 import ChaosBoard from './components/ChaosBoard';
 import BlackMarket from './components/BlackMarket';
 import WhisperNet from './components/WhisperNet';
+import SoundManager from './components/SoundManager';
+import EndingSequence from './components/EndingSequence';
 
 interface GameState {
   darkCoins: number;
@@ -17,6 +19,9 @@ interface GameState {
   hasAnonymityTracker: boolean;
   discoveredOrionHint: boolean;
   finalCodeRevealed: boolean;
+  escapeAttempts: number;
+  gameCompleted: boolean;
+  showEnding: boolean;
 }
 
 function App() {
@@ -30,7 +35,10 @@ function App() {
     currentMissionStep: 0,
     hasAnonymityTracker: false,
     discoveredOrionHint: false,
-    finalCodeRevealed: false
+    finalCodeRevealed: false,
+    escapeAttempts: 0,
+    gameCompleted: false,
+    showEnding: false
   });
   
   const [messages, setMessages] = useState([
@@ -47,8 +55,29 @@ function App() {
   const [currentMission, setCurrentMission] = useState("'X'와 대화하기");
   const [showMarket, setShowMarket] = useState(false);
   const [showWhisperNet, setShowWhisperNet] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
   const validUrls = ['welcome.onion', 'echoesofvoid.onion', 'cryptomart.onion', 'whispernet.onion'];
+
+  // Save game state to localStorage
+  useEffect(() => {
+    localStorage.setItem('darkdive_gamestate', JSON.stringify(gameState));
+  }, [gameState]);
+
+  // Load game state from localStorage
+  useEffect(() => {
+    const savedState = localStorage.getItem('darkdive_gamestate');
+    if (savedState) {
+      try {
+        const parsedState = JSON.parse(savedState);
+        if (!parsedState.gameCompleted) {
+          setGameState(parsedState);
+        }
+      } catch (error) {
+        console.log('Failed to load saved game state');
+      }
+    }
+  }, []);
 
   const triggerGlitch = (intensity = 1) => {
     setGlitchIntensity(intensity);
@@ -124,8 +153,6 @@ function App() {
       isEncrypted: false
     };
     setMessages([...messages, newMessage]);
-    console.log('Current State:', { ...gameState }); // 상태 확인
-    console.log('Sent Message:', message); // 전송된 메시지 확인
 
     // Auto-response from X based on mission progress
     if (gameState.currentMissionStep === 0 && message.toLowerCase().includes('도움')) {
@@ -147,11 +174,8 @@ function App() {
     // Mission 3 logic - User_Orion message
     if (gameState.currentMissionStep === 2 && gameState.discoveredOrionHint) {
       const messageText = message.toLowerCase().trim();
-      console.log('Checking Mission Step 2:', gameState.currentMissionStep, 'Discovered Hint:', gameState.discoveredOrionHint, 'Message:', messageText);
       if (messageText === 'orion 781' || messageText === 'orion781') {
-        console.log('Triggering Orion 781 response');
         setTimeout(() => {
-          console.log('Displaying Data Packet Message');
           const dataMsg = document.createElement('div');
           dataMsg.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-blue-900 border border-blue-400 text-blue-400 p-4 rounded-lg z-50 font-mono';
           dataMsg.textContent = 'INCOMING DATA PACKET. ANALYZING...';
@@ -164,7 +188,6 @@ function App() {
 
           // X sends final encrypted code
           setTimeout(() => {
-            console.log('Sending Final Code');
             const finalCode = {
               id: messages.length + 2,
               sender: 'X',
@@ -208,71 +231,45 @@ function App() {
       }
     }
 
-    // Final escape code check
+    // Final escape code check - ENHANCED FOR STAGE 4
     if (gameState.currentMissionStep === 3 && gameState.finalCodeRevealed) {
       const messageText = message.toLowerCase().replace(/\s/g, '');
       if (messageText === 'digitalescape' || messageText === 'digital_escape') {
-        // Successful escape
+        // Successful escape - STAGE 4 COMPLETION
+        setGameState(prev => ({ 
+          ...prev, 
+          gameCompleted: true,
+          showEnding: true
+        }));
+        
+        // Clear all intervals and effects
         setTimeout(() => {
-          const escapeMsg = document.createElement('div');
-          escapeMsg.className = 'fixed inset-0 bg-black flex items-center justify-center z-50';
-          escapeMsg.innerHTML = `
-            <div class="text-center">
-              <div class="text-green-400 text-4xl font-bold mb-4 animate-pulse">CONNECTION SEVERED</div>
-              <div class="text-green-400 text-2xl mb-8">ESCAPE SUCCESSFUL</div>
-              <div className="text-white text-lg">당신은 탈출에 성공했습니다.</div>
-              <div className="text-white text-lg">현실로 돌아오세요.</div>
-              <div className="text-green-400 text-sm mt-4">DarkDive는 당신의 안전한 디지털 탐험을 응원합니다.</div>
-            </div>
-          `;
-          document.body.appendChild(escapeMsg);
-          
-          // Fade to white after 5 seconds
-          setTimeout(() => {
-            escapeMsg.style.background = 'white';
-            escapeMsg.style.transition = 'background 3s ease';
-            escapeMsg.querySelector('div')!.style.color = 'black';
-            escapeMsg.querySelector('div')!.style.transition = 'color 3s ease';
-          }, 5000);
-
-          // Hidden ending after 10 seconds
-          setTimeout(() => {
-            escapeMsg.innerHTML = `
-              <div class="text-center">
-                <div class="text-red-600 text-lg font-mono">
-                  우리는 다시 만날 것입니다...<br>
-                  당신은 그들의 흔적을 따라왔지만,<br>
-                  당신 또한 이제 그들의 일부입니다.<br><br>
-                  - X
-                </div>
-              </div>
-            `;
-            setTimeout(() => {
-              if (document.body.contains(escapeMsg)) {
-                document.body.removeChild(escapeMsg);
-              }
-            }, 5000);
-          }, 10000);
+          // Final success sequence will be handled by EndingSequence component
         }, 1000);
+        
       } else {
-        // Wrong code - intensify tracking
-        triggerGlitch(3);
-        const attempts = parseInt(localStorage.getItem('escape_attempts') || '0') + 1;
-        localStorage.setItem('escape_attempts', attempts.toString());
+        // Wrong code - intensify tracking (ENHANCED)
+        const newAttempts = gameState.escapeAttempts + 1;
+        setGameState(prev => ({ ...prev, escapeAttempts: newAttempts }));
+        
+        triggerGlitch(Math.min(newAttempts + 1, 5));
         
         const warnings = [
           'SYSTEM LOCKDOWN INITIATED!',
           'TRACE INTENSIFYING!',
           'FINAL WARNING: DO NOT PROCEED!',
-          'EMERGENCY PROTOCOLS ACTIVATED!'
+          'EMERGENCY PROTOCOLS ACTIVATED!',
+          'COMPLETE SYSTEM SHUTDOWN IMMINENT!'
         ];
         
         const warningMsg = document.createElement('div');
         warningMsg.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-red-900 border border-red-400 text-red-400 p-6 rounded-lg z-50 font-mono text-center animate-pulse';
         warningMsg.innerHTML = `
-          <div class="text-2xl font-bold mb-4">⚠️ ${warnings[Math.min(attempts - 1, warnings.length - 1)]} ⚠️</div>
+          <div class="text-2xl font-bold mb-4">⚠️ ${warnings[Math.min(newAttempts - 1, warnings.length - 1)]} ⚠️</div>
           <div class="text-lg">INCORRECT ESCAPE CODE</div>
-          <div class="text-sm mt-2">ATTEMPTS: ${attempts}/5</div>
+          <div class="text-sm mt-2">ATTEMPTS: ${newAttempts}/5</div>
+          ${newAttempts >= 3 ? '<div class="text-xs mt-4 text-red-300 animate-pulse">시스템이 불안정해지고 있습니다...</div>' : ''}
+          ${newAttempts >= 4 ? '<div class="text-xs mt-2 text-red-300 animate-pulse">최종 경고: 한 번 더 실패하면...</div>' : ''}
         `;
         document.body.appendChild(warningMsg);
         setTimeout(() => {
@@ -280,6 +277,25 @@ function App() {
             document.body.removeChild(warningMsg);
           }
         }, 4000);
+
+        // Game Over condition
+        if (newAttempts >= 5) {
+          setTimeout(() => {
+            const gameOverMsg = document.createElement('div');
+            gameOverMsg.className = 'fixed inset-0 bg-red-900 flex items-center justify-center z-50';
+            gameOverMsg.innerHTML = `
+              <div class="text-center">
+                <div class="text-red-400 text-6xl font-bold mb-8 animate-pulse">GAME OVER</div>
+                <div class="text-red-400 text-2xl mb-4">SYSTEM COMPROMISED</div>
+                <div class="text-white text-lg mb-8">추적자들이 당신을 찾았습니다.</div>
+                <button onclick="location.reload()" class="bg-red-400 text-black px-6 py-3 rounded font-bold hover:bg-red-300 transition-colors">
+                  다시 시작
+                </button>
+              </div>
+            `;
+            document.body.appendChild(gameOverMsg);
+          }, 2000);
+        }
       }
     }
   };
@@ -362,6 +378,11 @@ function App() {
     }
   };
 
+  const resetGame = () => {
+    localStorage.removeItem('darkdive_gamestate');
+    window.location.reload();
+  };
+
   useEffect(() => {
     // Auto-load welcome.onion on startup
     setCurrentUrl('welcome.onion');
@@ -382,12 +403,6 @@ function App() {
         document.head.removeChild(style);
       }
     };
-  }, []);
-
-  // 디버깅용: 상태 강제 업데이트 (선택 사항, 필요 시 주석 해제)
-  useEffect(() => {
-    console.log('Initial State Check:', { ...gameState });
-    // setGameState(prev => ({ ...prev, currentMissionStep: 2, discoveredOrionHint: true })); // 임시 테스트용
   }, []);
 
   const renderContent = () => {
@@ -446,6 +461,24 @@ function App() {
                   좌측 하단 통신창을 확인하세요. 'X'가 당신을 기다리고 있습니다.
                 </p>
               </div>
+
+              {/* Game Controls */}
+              <div className="border-t border-green-400 pt-4">
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => setSoundEnabled(!soundEnabled)}
+                    className="bg-green-400 text-black px-3 py-1 rounded text-sm hover:bg-green-300 transition-colors"
+                  >
+                    사운드: {soundEnabled ? 'ON' : 'OFF'}
+                  </button>
+                  <button
+                    onClick={resetGame}
+                    className="bg-red-400 text-black px-3 py-1 rounded text-sm hover:bg-red-300 transition-colors"
+                  >
+                    게임 리셋
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -472,9 +505,14 @@ function App() {
     }
   };
 
+  if (gameState.showEnding) {
+    return <EndingSequence onRestart={resetGame} />;
+  }
+
   return (
     <div className="min-h-screen bg-black text-green-400 font-mono relative overflow-hidden">
       <BinaryRain />
+      <SoundManager enabled={soundEnabled} gameState={gameState} />
       
       {showGlitch && <GlitchEffect intensity={glitchIntensity} />}
       
@@ -501,6 +539,12 @@ function App() {
                 <div className="text-green-400 text-xs mt-2 flex items-center">
                   <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
                   익명 트래커 활성
+                </div>
+              )}
+              {gameState.escapeAttempts > 0 && (
+                <div className="text-red-400 text-xs mt-2 flex items-center">
+                  <div className="w-2 h-2 bg-red-400 rounded-full mr-2 animate-pulse"></div>
+                  탈출 시도: {gameState.escapeAttempts}/5
                 </div>
               )}
             </div>

@@ -48,7 +48,7 @@ const BlackMarket: React.FC<BlackMarketProps> = ({ darkCoins, purchasedItems, on
       description: '고급 신원 위조 도구',
       icon: <Eye className="w-8 h-8" />,
       details: '최고 수준의 신원 위조 기술로 제작된 디지털 여권입니다. 특별한 검문소 통과에 필요합니다.',
-      hint: '번호 ORN-7814는 특별한 의미를 가집니다.',
+      hint: '번호 ORN-7814는 특별한 의미를 가집니다. 오리온과 관련이 있을지도...',
       specialCode: 'ORN-7814'
     },
     {
@@ -58,7 +58,7 @@ const BlackMarket: React.FC<BlackMarketProps> = ({ darkCoins, purchasedItems, on
       description: '고급 암호 해독 도구',
       icon: <Key className="w-8 h-8" />,
       details: '복잡한 암호화된 메시지를 자동으로 해독합니다. 특정 퍼즐 해결에 필수적입니다. Base64, 이진수, Hex 코드를 즉시 변환할 수 있습니다.',
-      hint: '일부 메시지는 이 키 없이는 절대 해독할 수 없습니다. 최종 단계에서 중요한 역할을 합니다.'
+      hint: '일부 메시지는 이 키 없이는 절대 해독할 수 없습니다. 최종 단계에서 중요한 역할을 합니다. DIGITAL ESCAPE의 비밀을 풀 수 있습니다.'
     },
     {
       id: 'data_scrambler',
@@ -67,7 +67,7 @@ const BlackMarket: React.FC<BlackMarketProps> = ({ darkCoins, purchasedItems, on
       description: '추적 신호 교란 장치',
       icon: <Zap className="w-8 h-8" />,
       details: '추적 시스템의 신호를 교란하여 일시적으로 무력화시킵니다. 위험한 상황에서의 최후의 수단입니다.',
-      hint: '이진수 시퀀스 101110010이 활성화 코드입니다.',
+      hint: '이진수 시퀀스 101110010이 활성화 코드입니다. 이 코드는 다른 곳에서도 중요할 수 있습니다.',
       specialCode: '101110010'
     }
   ];
@@ -136,6 +136,7 @@ const BlackMarket: React.FC<BlackMarketProps> = ({ darkCoins, purchasedItems, on
             <div class="text-sm">AUTO-DECODE: ENABLED</div>
             <div class="text-sm">SUPPORTED: BASE64, BINARY, HEX</div>
             <div class="text-xs mt-2 text-blue-300">암호화된 메시지 자동 해독 가능</div>
+            <div class="text-xs mt-1 text-yellow-300">DIGITAL ESCAPE 해독 준비 완료</div>
           </div>
         `;
         document.body.appendChild(decryptEffect);
@@ -155,12 +156,33 @@ const BlackMarket: React.FC<BlackMarketProps> = ({ darkCoins, purchasedItems, on
             <div class="text-sm">ACTIVATION CODE: 101110010</div>
             <div class="text-sm">SIGNAL JAMMING: READY</div>
             <div class="text-xs mt-2 text-purple-300">추적 신호 교란 준비 완료</div>
+            <div class="text-xs mt-1 text-yellow-300">이 코드를 기억하세요</div>
           </div>
         `;
         document.body.appendChild(scramblerEffect);
         setTimeout(() => {
           if (document.body.contains(scramblerEffect)) {
             document.body.removeChild(scramblerEffect);
+          }
+        }, 3000);
+      }
+
+      if (item.id === 'fake_passport') {
+        const passportEffect = document.createElement('div');
+        passportEffect.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-yellow-900 border border-yellow-400 text-yellow-400 p-6 rounded-lg z-50 font-mono';
+        passportEffect.innerHTML = `
+          <div class="text-center">
+            <div class="text-lg font-bold mb-2">FAKE PASSPORT GENERATED</div>
+            <div class="text-sm">ID: ORN-7814</div>
+            <div class="text-sm">STATUS: VERIFIED</div>
+            <div class="text-xs mt-2 text-yellow-300">특별 검문소 통과 가능</div>
+            <div class="text-xs mt-1 text-green-300">오리온 관련 정보 접근 권한 부여</div>
+          </div>
+        `;
+        document.body.appendChild(passportEffect);
+        setTimeout(() => {
+          if (document.body.contains(passportEffect)) {
+            document.body.removeChild(passportEffect);
           }
         }, 3000);
       }
@@ -213,12 +235,22 @@ const BlackMarket: React.FC<BlackMarketProps> = ({ darkCoins, purchasedItems, on
         </div>
       )}
 
+      {/* Final Mission Hint */}
+      {gameState.currentMissionStep >= 3 && (
+        <div className="bg-blue-900 border-b border-blue-400 p-3">
+          <div className="text-blue-400 text-sm text-center font-mono">
+            💡 HINT: 구매한 아이템들의 특별 코드들이 최종 해독에 도움이 될 수 있습니다
+          </div>
+        </div>
+      )}
+
       {/* Items Grid */}
       <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
         {items.map((item) => {
           const isPurchased = purchasedItems.includes(item.id);
           const canAfford = darkCoins >= item.price;
           const isMissionCritical = item.id === 'anonymity_tracker' && gameState.currentMissionStep >= 2 && !gameState.hasAnonymityTracker;
+          const isFinalMissionRelevant = gameState.currentMissionStep >= 3 && (item.id === 'decrypt_key' || item.id === 'data_scrambler' || item.id === 'fake_passport');
           
           return (
             <div
@@ -228,9 +260,11 @@ const BlackMarket: React.FC<BlackMarketProps> = ({ darkCoins, purchasedItems, on
                   ? 'border-green-400 bg-green-900 bg-opacity-20' 
                   : isMissionCritical
                     ? 'border-yellow-400 bg-yellow-900 bg-opacity-20 animate-pulse'
-                    : canAfford 
-                      ? 'border-purple-400 hover:bg-purple-900 hover:bg-opacity-20' 
-                      : 'border-gray-600 opacity-50'
+                    : isFinalMissionRelevant
+                      ? 'border-blue-400 bg-blue-900 bg-opacity-20'
+                      : canAfford 
+                        ? 'border-purple-400 hover:bg-purple-900 hover:bg-opacity-20' 
+                        : 'border-gray-600 opacity-50'
               }`}
               onClick={() => !isPurchased && setSelectedItem(item)}
             >
@@ -240,7 +274,9 @@ const BlackMarket: React.FC<BlackMarketProps> = ({ darkCoins, purchasedItems, on
                     ? 'text-green-400' 
                     : isMissionCritical 
                       ? 'text-yellow-400' 
-                      : 'text-purple-400'
+                      : isFinalMissionRelevant
+                        ? 'text-blue-400'
+                        : 'text-purple-400'
                 }`}>
                   {item.icon}
                 </div>
@@ -250,13 +286,18 @@ const BlackMarket: React.FC<BlackMarketProps> = ({ darkCoins, purchasedItems, on
                       ? 'text-green-400' 
                       : isMissionCritical 
                         ? 'text-yellow-400' 
-                        : 'text-purple-300'
+                        : isFinalMissionRelevant
+                          ? 'text-blue-400'
+                          : 'text-purple-300'
                   }`}>
                     {item.name}
                   </h3>
                   <p className="text-xs text-gray-400">{item.description}</p>
                   {isMissionCritical && (
                     <p className="text-xs text-yellow-300 mt-1 animate-pulse">⚡ MISSION CRITICAL</p>
+                  )}
+                  {isFinalMissionRelevant && (
+                    <p className="text-xs text-blue-300 mt-1">🔑 FINAL MISSION RELEVANT</p>
                   )}
                 </div>
               </div>
