@@ -171,66 +171,6 @@ function App() {
       }, 2000);
     }
 
-    // Mission 3 logic - User_Orion message
-    if (gameState.currentMissionStep === 2 && gameState.discoveredOrionHint) {
-      const messageText = message.toLowerCase().trim();
-      if (messageText === 'orion 781' || messageText === 'orion781') {
-        setTimeout(() => {
-          const dataMsg = document.createElement('div');
-          dataMsg.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-blue-900 border border-blue-400 text-blue-400 p-4 rounded-lg z-50 font-mono';
-          dataMsg.textContent = 'INCOMING DATA PACKET. ANALYZING...';
-          document.body.appendChild(dataMsg);
-          setTimeout(() => {
-            if (document.body.contains(dataMsg)) {
-              document.body.removeChild(dataMsg);
-            }
-          }, 3000);
-
-          // X sends final encrypted code
-          setTimeout(() => {
-            const finalCode = {
-              id: messages.length + 2,
-              sender: 'X',
-              text: 'MDEwMDEwMDEgMDExMDEwMDEgMDExMDExMTAgMDExMDAwMDEgMDEwMTAwMDAgMDExMDEwMDEgMDEwMDAwMDAgMDExMDEwMDEgMDExMDEwMDEgMDExMDAwMDEgMDExMDAxMDAgMDExMDEwMDEgMDEwMDAwMDA=',
-              timestamp: Date.now() + 3000,
-              isEncrypted: true,
-              decrypted: 'DIGITAL ESCAPE'
-            };
-            setMessages(prev => [...prev, finalCode]);
-            setCurrentMission("최종 코드 해독 및 입력");
-            setGameState(prev => ({ 
-              ...prev, 
-              currentMissionStep: 3,
-              finalCodeRevealed: true,
-              completedMissions: [...prev.completedMissions, 'mission3']
-            }));
-          }, 4000);
-        }, 1000);
-      } else {
-        setTimeout(() => {
-          const failMsg = document.createElement('div');
-          failMsg.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-red-900 border border-red-400 text-red-400 p-4 rounded-lg z-50';
-          failMsg.textContent = 'MESSAGE FAILED: RECIPIENT NOT FOUND';
-          document.body.appendChild(failMsg);
-          setTimeout(() => {
-            if (document.body.contains(failMsg)) {
-              document.body.removeChild(failMsg);
-            }
-          }, 3000);
-
-          const xHint = {
-            id: messages.length + 2,
-            sender: 'X',
-            text: 'yzqfyn zj lqzmy xybz gqg. mqyr 781rf jxrfzrg.',
-            timestamp: Date.now() + 1000,
-            isEncrypted: true,
-            decrypted: '오리온이 기다리는 코드는 781입니다.'
-          };
-          setMessages(prev => [...prev, xHint]);
-        }, 2000);
-      }
-    }
-
     // Final escape code check - ENHANCED FOR STAGE 4
     if (gameState.currentMissionStep === 3 && gameState.finalCodeRevealed) {
       const messageText = message.toLowerCase().replace(/\s/g, '');
@@ -355,6 +295,41 @@ function App() {
         currentMissionStep: 2,
         completedMissions: [...prev.completedMissions, 'mission1']
       }));
+    }
+
+    // NEW: Handle Orion message success from ChaosBoard
+    if (missionData.type === 'orion_message_success' && gameState.currentMissionStep === 2) {
+      setTimeout(() => {
+        const dataMsg = document.createElement('div');
+        dataMsg.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-blue-900 border border-blue-400 text-blue-400 p-4 rounded-lg z-50 font-mono';
+        dataMsg.textContent = 'INCOMING DATA PACKET. ANALYZING...';
+        document.body.appendChild(dataMsg);
+        setTimeout(() => {
+          if (document.body.contains(dataMsg)) {
+            document.body.removeChild(dataMsg);
+          }
+        }, 3000);
+
+        // X sends final encrypted code
+        setTimeout(() => {
+          const finalCode = {
+            id: messages.length + 1,
+            sender: 'X',
+            text: 'MDEwMDEwMDEgMDExMDEwMDEgMDExMDExMTAgMDExMDAwMDEgMDEwMTAwMDAgMDExMDEwMDEgMDEwMDAwMDAgMDExMDEwMDEgMDExMDEwMDEgMDExMDAwMDEgMDExMDAxMDAgMDExMDEwMDEgMDEwMDAwMDA=',
+            timestamp: Date.now(),
+            isEncrypted: true,
+            decrypted: 'DIGITAL ESCAPE'
+          };
+          setMessages(prev => [...prev, finalCode]);
+          setCurrentMission("최종 코드 해독 및 입력");
+          setGameState(prev => ({ 
+            ...prev, 
+            currentMissionStep: 3,
+            finalCodeRevealed: true,
+            completedMissions: [...prev.completedMissions, 'mission3']
+          }));
+        }, 4000);
+      }, 1000);
     }
   };
 
